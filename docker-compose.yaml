@@ -1,0 +1,5 @@
+version: "3.8"
+services:
+
+  autogptq:
+    image: localagi/starcoder.cpp:${STARCODER_CPP_VERSION}${STARCODER_CPP_FLAVOR}

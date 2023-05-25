@@ -1,0 +1,59 @@
+name: Publish Docker images
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: read
+
+    
+jobs:
+
+  build-starcoder-cpp:
+    uses: localagi/ai-dedicated-workflows/.github/workflows/operation-docker-build-publish.yml@v3
+    with:
+      context-repository: bigcode-project/starcoder.cpp
+      context-repository-ref: ${{ github.ref_name }}
+      registry-repo-name: starcoder.cpp
+      tags: |
+        type=schedule
+        type=ref,event=branch
+      flavor: |
+        suffix=${{ matrix.suffix }}
+      build-args: |
+        FROM_IMAGE=${{ matrix.from || 'python:3.10-slim-bullseye' }}
+        ${{ matrix.make-args }}
+      platforms: ${{ matrix.platforms || 'linux/amd64' }}
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+         
+        - type: default # defaults
+          platforms: linux/amd64,linux/arm64/v8
+
+#        - type: CLBLAST
+#          suffix: "-clblast"
+#          make-args: "LLAMA_CLBLAST=1" # -DCMAKE_PREFIX_PATH="$env:RUNNER_TEMP/clblast"
+#          platforms: linux/amd64,linux/arm64/v8  
+
+        - type: OPENBLAS
+          suffix: "-openblas"
+          make-args: "LLAMA_OPENBLAS=1"
+          platforms: linux/amd64,linux/arm64/v8
+          
+        # see https://hub.docker.com/r/nvidia/cuda/tags       
+        - type: CUBLAS
+          suffix: "-cublas-11.7.1" 
+          make-args: "LLAMA_CUBLAS=1"
+          from: nvidia/cuda:11.7.1-devel-ubuntu22.04
+          
+        - type: CUBLAS
+          suffix: "-cublas-12.1.1"
+          make-args: "LLAMA_CUBLAS=1"
+          from: nvidia/cuda:12.1.1-devel-ubuntu22.04         
+          
